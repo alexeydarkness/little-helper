@@ -1,13 +1,15 @@
 package ru.littlehelper.app.ui.auth
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ru.littlehelper.app.data.AppRepository
 
 /** Роль пользователя. На сервер уйдёт как STUDENT / TUTOR. */
 enum class Role(val title: String) {
@@ -31,7 +33,8 @@ data class RegisterUiState(
     val success: Boolean = false,
 )
 
-class RegisterViewModel : ViewModel() {
+class RegisterViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = AppRepository.get(application)
 
     private val _state = MutableStateFlow(RegisterUiState())
     val state: StateFlow<RegisterUiState> = _state.asStateFlow()
@@ -69,9 +72,14 @@ class RegisterViewModel : ViewModel() {
 
         _state.update { it.copy(loading = true, formError = null) }
         viewModelScope.launch {
-            // TODO(спринт 4): заменить на запрос к серверу POST /api/v1/auth/register
-            delay(800)
-            _state.update { it.copy(loading = false, success = true) }
+            try {
+                repository.register(s.username, s.fullName, s.phone, s.role.name, s.email, s.password)
+                _state.update { it.copy(loading = false, success = true, password = "") }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                _state.update { it.copy(loading = false, formError = error.message ?: "Не удалось зарегистрироваться") }
+            }
         }
     }
 }
