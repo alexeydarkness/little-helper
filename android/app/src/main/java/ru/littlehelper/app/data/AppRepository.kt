@@ -49,6 +49,17 @@ data class LessonDraft(
     val paid: Boolean = false,
 )
 
+data class UserProfile(
+    val username: String,
+    val email: String,
+    val fullName: String,
+    val phone: String,
+    val role: String,
+    val balance: Int,
+    val createdAt: String,
+    val avatarBase64: String,
+)
+
 class ApiFailure(message: String, val unauthorized: Boolean = false) : Exception(message)
 
 class AppRepository private constructor(context: Context) {
@@ -79,6 +90,22 @@ class AppRepository private constructor(context: Context) {
         val user = JSONObject(request("GET", "/users/me"))
         return AppUser(user.getLong("id"), user.getString("fullName"), user.getString("role"))
     }
+
+    suspend fun profile(): UserProfile = parseProfile(JSONObject(request("GET", "/users/me")))
+
+    suspend fun updateProfile(profile: UserProfile): UserProfile {
+        val body = JSONObject().put("username", profile.username.trim())
+            .put("email", profile.email.trim()).put("fullName", profile.fullName.trim())
+            .put("phone", profile.phone.trim().ifEmpty { null } ?: JSONObject.NULL)
+            .put("avatarBase64", profile.avatarBase64)
+        return parseProfile(JSONObject(request("PUT", "/users/me", body)))
+    }
+
+    private fun parseProfile(value: JSONObject) = UserProfile(
+        value.getString("username"), value.getString("email"), value.getString("fullName"),
+        value.optionalText("phone"), value.getString("role"), value.getInt("balance"),
+        value.getString("createdAt"), value.optionalText("avatarBase64"),
+    )
 
     suspend fun students(): List<Student> {
         val array = JSONArray(request("GET", "/lessons/students"))
