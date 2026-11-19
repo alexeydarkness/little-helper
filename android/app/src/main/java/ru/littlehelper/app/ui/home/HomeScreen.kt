@@ -20,6 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import ru.littlehelper.app.data.AppUser
 import ru.littlehelper.app.data.Lesson
 import ru.littlehelper.app.ui.common.Logo
@@ -35,13 +38,21 @@ private val weekdayFormat = DateTimeFormatter.ofPattern("EEEE", Locale.forLangua
 private val dateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("ru"))
 
 @Composable
-fun HomeScreen(onLogout: () -> Unit, viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, viewModel: HomeViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.sessionExpired) {
         if (state.sessionExpired) onLogout()
     }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     HomeContent(state, viewModel::selectDate, viewModel::refresh, viewModel::openFreeSlot,
-        viewModel::openLesson, onLogout)
+        viewModel::openLesson, onLogout, onProfile)
     state.editor?.let { draft ->
         LessonEditor(draft, state.students, state.saving, state.editorError,
             viewModel::changeDraft, viewModel::save, viewModel::delete, viewModel::closeDialog)
@@ -60,6 +71,7 @@ fun HomeContent(
     onFreeSlot: (LocalTime, LocalTime) -> Unit,
     onLesson: (Lesson) -> Unit,
     onLogout: () -> Unit,
+    onProfile: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var calendarOpen by remember { mutableStateOf(false) }
@@ -76,6 +88,10 @@ fun HomeContent(
                             Icon(Icons.Default.Menu, contentDescription = "Меню")
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(text = { Text("Профиль") }, onClick = {
+                                menuOpen = false
+                                onProfile()
+                            })
                             DropdownMenuItem(text = { Text("Обновить") }, onClick = {
                                 menuOpen = false
                                 onRefresh()

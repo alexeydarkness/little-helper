@@ -10,12 +10,13 @@ import ru.littlehelper.app.data.AppRepository
 import ru.littlehelper.app.ui.auth.LoginScreen
 import ru.littlehelper.app.ui.auth.RegisterScreen
 import ru.littlehelper.app.ui.home.HomeScreen
+import ru.littlehelper.app.ui.profile.ProfileScreen
 
-/** Адреса экранов. Новый экран = новая константа + новый composable(...) ниже. */
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val HOME = "home"
+    const val PROFILE = "profile"
 }
 
 @Composable
@@ -25,8 +26,6 @@ fun AppNavHost() {
     val repository = remember { AppRepository.get(context) }
     val startDestination = remember { if (repository.hasSession()) Routes.HOME else Routes.LOGIN }
 
-    // После входа/регистрации переходим на главный и убираем экраны входа из истории,
-    // чтобы кнопка «Назад» не возвращала на форму входа
     val goHome = {
         navController.navigate(Routes.HOME) {
             popUpTo(Routes.LOGIN) { inclusive = true }
@@ -48,7 +47,19 @@ fun AppNavHost() {
         }
         composable(Routes.HOME) {
             HomeScreen(
+                onProfile = { navController.navigate(Routes.PROFILE) },
                 onLogout = {
+                    repository.logout()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(Routes.PROFILE) {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onSessionExpired = {
                     repository.logout()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
