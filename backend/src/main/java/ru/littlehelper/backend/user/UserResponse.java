@@ -10,7 +10,8 @@ public record UserResponse(
 		String phone,
 		Role role,
 		int balance,
-		Instant createdAt
+		Instant createdAt,
+		String avatarBase64
 ) {
 
 	public static UserResponse from(User user) {
@@ -22,7 +23,8 @@ public record UserResponse(
 				user.getPhone(),
 				user.getRole(),
 				user.getBalance(),
-				user.getCreatedAt()
+				user.getCreatedAt(),
+				user.getAvatarBase64()
 		);
 	}
 }
