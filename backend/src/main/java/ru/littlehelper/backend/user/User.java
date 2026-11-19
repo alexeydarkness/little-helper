@@ -12,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Locale;
 
 @Entity
 @Table(name = "users")
@@ -24,6 +25,9 @@ public class User {
 	@Column(nullable = false, unique = true, length = 30)
 	private String username;
 
+	@Column(name = "username_key", nullable = false, unique = true, length = 30)
+	private String usernameKey;
+
 	@Column(nullable = false, unique = true, length = 100)
 	private String email;
 
@@ -35,6 +39,9 @@ public class User {
 
 	@Column(length = 30)
 	private String phone;
+
+	@Column(name = "avatar_base64", columnDefinition = "text")
+	private String avatarBase64;
 
 	@Enumerated(EnumType.STRING)
 	@JdbcTypeCode(SqlTypes.VARCHAR)
@@ -52,6 +59,7 @@ public class User {
 
 	public User(String username, String email, String passwordHash, String fullName, String phone, Role role) {
 		this.username = username;
+		this.usernameKey = username.toLowerCase(Locale.ROOT);
 		this.email = email;
 		this.passwordHash = passwordHash;
 		this.fullName = fullName;
@@ -85,6 +93,19 @@ public class User {
 
 	public Role getRole() {
 		return role;
+	}
+
+	public String getAvatarBase64() {
+		return avatarBase64;
+	}
+
+	public void updateProfile(String username, String email, String fullName, String phone, String avatar) {
+		this.username = username;
+		this.usernameKey = username.toLowerCase(Locale.ROOT);
+		this.email = email;
+		this.fullName = fullName;
+		this.phone = phone == null ? null : phone.trim();
+		if (avatar != null) this.avatarBase64 = avatar.isEmpty() ? null : avatar;
 	}
 
 	public int getBalance() {
