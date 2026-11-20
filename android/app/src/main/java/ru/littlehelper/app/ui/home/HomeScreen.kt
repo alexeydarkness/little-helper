@@ -1,5 +1,6 @@
 package ru.littlehelper.app.ui.home
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,6 +77,7 @@ fun HomeContent(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var calendarOpen by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as? Activity
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -99,6 +102,10 @@ fun HomeContent(
                             DropdownMenuItem(text = { Text("Выйти") }, onClick = {
                                 menuOpen = false
                                 onLogout()
+                            })
+                            DropdownMenuItem(text = { Text("Закрыть приложение") }, onClick = {
+                                menuOpen = false
+                                activity?.finish()
                             })
                         }
                     }
