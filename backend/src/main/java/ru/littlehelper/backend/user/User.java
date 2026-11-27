@@ -112,6 +112,13 @@ public class User {
 		return balance;
 	}
 
+	public boolean trySpendCoins(int price) {
+		if (price < 0) throw new IllegalArgumentException("Цена не может быть отрицательной");
+		if (balance < price) return false;
+		balance -= price;
+		return true;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}
