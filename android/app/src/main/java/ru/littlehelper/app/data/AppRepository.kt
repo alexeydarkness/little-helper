@@ -10,6 +10,7 @@ import ru.littlehelper.app.BuildConfig
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -18,6 +19,8 @@ data class AppUser(val id: Long, val fullName: String, val role: String) {
 }
 
 data class Student(val id: Long, val fullName: String, val username: String)
+
+data class UserSearchResult(val id: Long, val fullName: String, val username: String, val role: String)
 
 data class Lesson(
     val id: Long,
@@ -60,7 +63,7 @@ data class UserProfile(
     val avatarBase64: String,
 )
 
-class ApiFailure(message: String, val unauthorized: Boolean = false) : Exception(message)
+class ApiFailure(message: String, val unauthorized: Boolean = false, val status: Int? = null) : Exception(message)
 
 class AppRepository private constructor(context: Context) {
     private val session = context.getSharedPreferences("session", Context.MODE_PRIVATE)
@@ -112,6 +115,15 @@ class AppRepository private constructor(context: Context) {
         return List(array.length()) { index ->
             val user = array.getJSONObject(index)
             Student(user.getLong("id"), user.getString("fullName"), user.getString("username"))
+        }
+    }
+
+    suspend fun searchUsers(query: String): List<UserSearchResult> {
+        val encodedQuery = URLEncoder.encode(query, Charsets.UTF_8.name())
+        val results = JSONArray(request("GET", "/users/search?q=$encodedQuery"))
+        return List(results.length()) { index ->
+            val user = results.getJSONObject(index)
+            UserSearchResult(user.getLong("id"), user.getString("fullName"), user.getString("username"), user.getString("role"))
         }
     }
 
@@ -168,7 +180,7 @@ class AppRepository private constructor(context: Context) {
             if (status !in 200..299) {
                 val message = runCatching { JSONObject(response).optString("message") }.getOrNull()
                     ?.takeIf { it.isNotBlank() } ?: "Не удалось выполнить запрос. Повторите попытку."
-                throw ApiFailure(message, unauthorized = status == 401)
+                throw ApiFailure(message, unauthorized = status == 401, status = status)
             }
             response
         } catch (error: IOException) {

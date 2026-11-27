@@ -1,5 +1,6 @@
 package ru.littlehelper.app.ui.home
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,7 +40,8 @@ private val weekdayFormat = DateTimeFormatter.ofPattern("EEEE", Locale.forLangua
 private val dateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("ru"))
 
 @Composable
-fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, onSearch: (Boolean) -> Unit,
+               viewModel: HomeViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.sessionExpired) {
         if (state.sessionExpired) onLogout()
@@ -52,7 +55,7 @@ fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, viewModel: HomeViewM
         onDispose { lifecycle.removeObserver(observer) }
     }
     HomeContent(state, viewModel::selectDate, viewModel::refresh, viewModel::openFreeSlot,
-        viewModel::openLesson, onLogout, onProfile)
+        viewModel::openLesson, onLogout, onProfile, onSearch)
     state.editor?.let { draft ->
         LessonEditor(draft, state.students, state.saving, state.editorError,
             viewModel::changeDraft, viewModel::save, viewModel::delete, viewModel::closeDialog)
@@ -72,9 +75,11 @@ fun HomeContent(
     onLesson: (Lesson) -> Unit,
     onLogout: () -> Unit,
     onProfile: () -> Unit,
+    onSearch: (Boolean) -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var calendarOpen by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as? Activity
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -92,6 +97,14 @@ fun HomeContent(
                                 menuOpen = false
                                 onProfile()
                             })
+                            state.user?.let { user ->
+                                DropdownMenuItem(text = {
+                                    Text(if (user.isTutor) "Найти ученика" else "Найти репетитора")
+                                }, onClick = {
+                                    menuOpen = false
+                                    onSearch(user.isTutor)
+                                })
+                            }
                             DropdownMenuItem(text = { Text("Обновить") }, onClick = {
                                 menuOpen = false
                                 onRefresh()
@@ -99,6 +112,10 @@ fun HomeContent(
                             DropdownMenuItem(text = { Text("Выйти") }, onClick = {
                                 menuOpen = false
                                 onLogout()
+                            })
+                            DropdownMenuItem(text = { Text("Закрыть приложение") }, onClick = {
+                                menuOpen = false
+                                activity?.finish()
                             })
                         }
                     }
