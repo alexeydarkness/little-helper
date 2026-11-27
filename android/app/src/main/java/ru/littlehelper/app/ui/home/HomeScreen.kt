@@ -40,7 +40,8 @@ private val weekdayFormat = DateTimeFormatter.ofPattern("EEEE", Locale.forLangua
 private val dateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("ru"))
 
 @Composable
-fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, onSearch: (Boolean) -> Unit,
+               viewModel: HomeViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.sessionExpired) {
         if (state.sessionExpired) onLogout()
@@ -54,7 +55,7 @@ fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, viewModel: HomeViewM
         onDispose { lifecycle.removeObserver(observer) }
     }
     HomeContent(state, viewModel::selectDate, viewModel::refresh, viewModel::openFreeSlot,
-        viewModel::openLesson, onLogout, onProfile)
+        viewModel::openLesson, onLogout, onProfile, onSearch)
     state.editor?.let { draft ->
         LessonEditor(draft, state.students, state.saving, state.editorError,
             viewModel::changeDraft, viewModel::save, viewModel::delete, viewModel::closeDialog)
@@ -74,6 +75,7 @@ fun HomeContent(
     onLesson: (Lesson) -> Unit,
     onLogout: () -> Unit,
     onProfile: () -> Unit,
+    onSearch: (Boolean) -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var calendarOpen by remember { mutableStateOf(false) }
@@ -95,6 +97,14 @@ fun HomeContent(
                                 menuOpen = false
                                 onProfile()
                             })
+                            state.user?.let { user ->
+                                DropdownMenuItem(text = {
+                                    Text(if (user.isTutor) "Найти ученика" else "Найти репетитора")
+                                }, onClick = {
+                                    menuOpen = false
+                                    onSearch(user.isTutor)
+                                })
+                            }
                             DropdownMenuItem(text = { Text("Обновить") }, onClick = {
                                 menuOpen = false
                                 onRefresh()

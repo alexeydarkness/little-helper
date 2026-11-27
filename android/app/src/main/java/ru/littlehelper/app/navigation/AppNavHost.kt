@@ -3,20 +3,24 @@ package ru.littlehelper.app.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import ru.littlehelper.app.data.AppRepository
 import ru.littlehelper.app.ui.auth.LoginScreen
 import ru.littlehelper.app.ui.auth.RegisterScreen
 import ru.littlehelper.app.ui.home.HomeScreen
 import ru.littlehelper.app.ui.profile.ProfileScreen
+import ru.littlehelper.app.ui.search.UserSearchScreen
 
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val HOME = "home"
     const val PROFILE = "profile"
+    const val SEARCH = "search/{isTutor}"
 }
 
 @Composable
@@ -29,6 +33,12 @@ fun AppNavHost() {
     val goHome = {
         navController.navigate(Routes.HOME) {
             popUpTo(Routes.LOGIN) { inclusive = true }
+        }
+    }
+    val goLogin = {
+        repository.logout()
+        navController.navigate(Routes.LOGIN) {
+            popUpTo(Routes.HOME) { inclusive = true }
         }
     }
 
@@ -48,23 +58,21 @@ fun AppNavHost() {
         composable(Routes.HOME) {
             HomeScreen(
                 onProfile = { navController.navigate(Routes.PROFILE) },
-                onLogout = {
-                    repository.logout()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.HOME) { inclusive = true }
-                    }
-                },
+                onLogout = goLogin,
+                onSearch = { isTutor -> navController.navigate("search/$isTutor") },
             )
         }
         composable(Routes.PROFILE) {
             ProfileScreen(
                 onBack = { navController.popBackStack() },
-                onSessionExpired = {
-                    repository.logout()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.HOME) { inclusive = true }
-                    }
-                },
+                onSessionExpired = goLogin,
+            )
+        }
+        composable(Routes.SEARCH, arguments = listOf(navArgument("isTutor") { type = NavType.BoolType })) { entry ->
+            UserSearchScreen(
+                isTutor = entry.arguments?.getBoolean("isTutor") == true,
+                onBack = { navController.popBackStack() },
+                onSessionExpired = goLogin,
             )
         }
     }
