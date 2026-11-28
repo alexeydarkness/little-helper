@@ -40,7 +40,7 @@ private val weekdayFormat = DateTimeFormatter.ofPattern("EEEE", Locale.forLangua
 private val dateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("ru"))
 
 @Composable
-fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, onSearch: (Boolean) -> Unit,
+fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, onSearch: (Boolean) -> Unit, onShop: () -> Unit,
                viewModel: HomeViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.sessionExpired) {
@@ -55,7 +55,7 @@ fun HomeScreen(onLogout: () -> Unit, onProfile: () -> Unit, onSearch: (Boolean) 
         onDispose { lifecycle.removeObserver(observer) }
     }
     HomeContent(state, viewModel::selectDate, viewModel::refresh, viewModel::openFreeSlot,
-        viewModel::openLesson, onLogout, onProfile, onSearch)
+        viewModel::openLesson, onLogout, onProfile, onSearch, onShop)
     state.editor?.let { draft ->
         LessonEditor(draft, state.students, state.saving, state.editorError,
             viewModel::changeDraft, viewModel::save, viewModel::delete, viewModel::closeDialog)
@@ -76,6 +76,7 @@ fun HomeContent(
     onLogout: () -> Unit,
     onProfile: () -> Unit,
     onSearch: (Boolean) -> Unit,
+    onShop: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     var calendarOpen by remember { mutableStateOf(false) }
@@ -96,6 +97,10 @@ fun HomeContent(
                             DropdownMenuItem(text = { Text("Профиль") }, onClick = {
                                 menuOpen = false
                                 onProfile()
+                            })
+                            DropdownMenuItem(text = { Text("Магазин") }, onClick = {
+                                menuOpen = false
+                                onShop()
                             })
                             state.user?.let { user ->
                                 DropdownMenuItem(text = {

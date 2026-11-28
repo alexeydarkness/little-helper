@@ -14,6 +14,7 @@ import ru.littlehelper.app.ui.auth.RegisterScreen
 import ru.littlehelper.app.ui.home.HomeScreen
 import ru.littlehelper.app.ui.profile.ProfileScreen
 import ru.littlehelper.app.ui.search.UserSearchScreen
+import ru.littlehelper.app.ui.shop.ShopScreen
 
 object Routes {
     const val LOGIN = "login"
@@ -21,6 +22,7 @@ object Routes {
     const val HOME = "home"
     const val PROFILE = "profile"
     const val SEARCH = "search/{isTutor}"
+    const val SHOP = "shop"
 }
 
 @Composable
@@ -60,6 +62,7 @@ fun AppNavHost() {
                 onProfile = { navController.navigate(Routes.PROFILE) },
                 onLogout = goLogin,
                 onSearch = { isTutor -> navController.navigate("search/$isTutor") },
+                onShop = { navController.navigate(Routes.SHOP) },
             )
         }
         composable(Routes.PROFILE) {
@@ -74,6 +77,9 @@ fun AppNavHost() {
                 onBack = { navController.popBackStack() },
                 onSessionExpired = goLogin,
             )
+        }
+        composable(Routes.SHOP) {
+            ShopScreen(onBack = { navController.popBackStack() }, onSessionExpired = goLogin)
         }
     }
 }

@@ -22,6 +22,21 @@ data class Student(val id: Long, val fullName: String, val username: String)
 
 data class UserSearchResult(val id: Long, val fullName: String, val username: String, val role: String)
 
+enum class ShopItemType { FRAME, BACKGROUND }
+
+data class ShopItem(
+    val id: String,
+    val name: String,
+    val description: String,
+    val type: ShopItemType,
+    val price: Int,
+    val owned: Boolean,
+)
+
+data class ShopCatalog(val balance: Int, val items: List<ShopItem>)
+
+data class ShopPurchase(val itemId: String, val balance: Int, val alreadyOwned: Boolean)
+
 data class Lesson(
     val id: Long,
     val tutorId: Long,
@@ -127,6 +142,27 @@ class AppRepository private constructor(context: Context) {
         }
     }
 
+    suspend fun shopCatalog(): ShopCatalog {
+        val response = JSONObject(request("GET", "/shop"))
+        val items = response.getJSONArray("items")
+        return ShopCatalog(response.getInt("balance"), List(items.length()) { index ->
+            val item = items.getJSONObject(index)
+            ShopItem(
+                id = item.getString("id"),
+                name = item.getString("name"),
+                description = item.getString("description"),
+                type = ShopItemType.valueOf(item.getString("type")),
+                price = item.getInt("price"),
+                owned = item.getBoolean("owned"),
+            )
+        })
+    }
+
+    suspend fun buyShopItem(itemId: String): ShopPurchase {
+        val response = JSONObject(request("POST", "/shop/purchases", JSONObject().put("itemId", itemId)))
+        return ShopPurchase(response.getString("itemId"), response.getInt("balance"), response.getBoolean("alreadyOwned"))
+    }
+
     suspend fun lessons(date: LocalDate): List<Lesson> {
         val array = JSONArray(request("GET", "/lessons?date=$date"))
         return List(array.length()) { index ->
@@ -200,3 +236,4 @@ class AppRepository private constructor(context: Context) {
         }
     }
 }
+ 
