@@ -1,5 +1,6 @@
 package ru.littlehelper.backend.user;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	boolean existsByUsernameIgnoreCase(String username);
 
 	List<User> findByRoleOrderByFullNameAsc(Role role);
+
+	@Query("""
+			select new ru.littlehelper.backend.user.UserSearchResult(u.id, u.fullName, u.username, u.role)
+			from User u
+			where u.role = :role and (locate(lower(:term), lower(u.fullName)) > 0
+				or locate(lower(:term), lower(u.username)) > 0)
+			order by u.fullName, u.id
+			""")
+	List<UserSearchResult> searchByRoleAndTerm(Role role, String term, Pageable page);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select u from User u where u.id = :id")
